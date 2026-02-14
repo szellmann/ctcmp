@@ -98,11 +98,30 @@ double distance(const Graph &G1, const Graph &G2) {
   // O(n^2) compute graph affinity using custom similarity metric:
   std::vector<double> nodeDistances(G1.V.size(),DBL_MAX);
   //std::cout << G1.V.size() << ',' << G2.V.size() << '\n';
+  double minValue=DBL_MAX,maxValue=-DBL_MAX;
+  for (size_t i=0; i<G1.V.size(); ++i) {
+    minValue = std::min(minValue,G1.V[i].value);
+    maxValue = std::max(maxValue,G1.V[i].value);
+  }
+  for (size_t i=0; i<G2.V.size(); ++i) {
+    minValue = std::min(minValue,G2.V[i].value);
+    maxValue = std::max(maxValue,G2.V[i].value);
+  }
+  std::vector<double> normValues1(G1.V.size());
+  for (size_t i=0; i<G1.V.size(); ++i) {
+    normValues1[i] = (G1.V[i].value-minValue)/(maxValue-minValue);
+  }
+  std::vector<double> normValues2(G2.V.size());
+  for (size_t i=0; i<G2.V.size(); ++i) {
+    normValues2[i] = (G2.V[i].value-minValue)/(maxValue-minValue);
+  }
   for (size_t i=0; i<G1.V.size(); ++i) {
     for (size_t j=0; j<G2.V.size(); ++j) {
       auto n1 = G1.V[i];
       auto n2 = G2.V[j];
-      double s1 = std::abs(n1.value-n2.value);
+      auto v1 = normValues1[i];
+      auto v2 = normValues2[j];
+      double s1 = std::abs(v1-v2);
       int    s2 = std::abs(n1.fanIn-n2.fanIn);
       int    s3 = std::abs(n1.fanOut-n2.fanOut);
       double w1=1/3.f;
