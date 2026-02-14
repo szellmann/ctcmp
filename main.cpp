@@ -134,14 +134,13 @@ double distance(const Graph &G1, const Graph &G2) {
       }
     }
   }
-  // just computing the avg is not such a good idea as it'll
-  // bias the results to be "better" for graphs with more nodes..
-  // (mostly for illustrative purposes / so we have any metric at all)
-  double sum=0.;
+  int cnt=0;
+  double EPS=1e-2;
   for (size_t i=0; i<nodeDistances.size(); ++i) {
-    sum+=nodeDistances[i];
+    if (nodeDistances[i]<EPS) cnt++;
   }
-  return nodeDistances.empty()?DBL_MAX:sum/nodeDistances.size();
+  return nodeDistances.empty()?DBL_MAX
+    : 1.-cnt/(double)nodeDistances.size();
 }
 
 int main(int argc, char **argv) {
