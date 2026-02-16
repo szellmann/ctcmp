@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "levenshtein.h"
 #include "util.h"
 
 struct Node {
@@ -18,6 +19,12 @@ struct Edge {
 struct Graph {
   std::vector<Node> V;
   std::vector<Edge> E;
+
+  int findNodeByName(const Node &n) const {
+    auto it
+      = std::find_if(V.begin(),V.end(),[=](const Node &n2) { return n.name==n2.name; });
+    return it-V.begin();
+  }
 
   int findOrAddNode(const Node &n) {
     auto it
@@ -94,7 +101,7 @@ Graph readDOT(std::string fileName) {
 }
 
 static
-double distance(const Graph &G1, const Graph &G2) {
+double distance_V1(const Graph &G1, const Graph &G2) {
   // O(n^2) compute graph affinity using custom similarity metric:
   std::vector<double> nodeDistances(G1.V.size(),DBL_MAX);
   //std::cout << G1.V.size() << ',' << G2.V.size() << '\n';
@@ -143,6 +150,28 @@ double distance(const Graph &G1, const Graph &G2) {
     : 1.-cnt/(double)nodeDistances.size();
 }
 
+static
+double distance_V2(const Graph &G1, const Graph &G2) {
+  if (G1.V.empty()||G2.V.empty()) return DBL_MAX;
+  // try picking a root node so the tree is _relatively_ balanced..
+  // as the directed edges don't point towards a single root.....
+  // pick the median of each graph's V set wrt its value:
+  std::vector<Node> orderedV1(G1.V);
+  std::sort(orderedV1.begin(),orderedV1.end(),
+            [](Node a, Node b){ return a.value<b.value; });
+
+  std::vector<Node> orderedV2(G2.V);
+  std::sort(orderedV2.begin(),orderedV2.end(),
+            [](Node a, Node b){ return a.value<b.value; });
+
+  Node n1 = *(orderedV1.begin()+orderedV1.size()/2);
+  Node n2 = *(orderedV2.begin()+orderedV2.size()/2);
+  int i1 = G1.findNodeByName(n1);
+  int i2 = G2.findNodeByName(n2);
+
+  return 0.;
+}
+
 int main(int argc, char **argv) {
   if (argc < 3)
     return -1;
@@ -156,6 +185,11 @@ int main(int argc, char **argv) {
     int ID = *(int *)userData;
     G[ID] = readDOT(argv[1+ID]);
 
+    int cnt=0;
+    for (int i=0; i<G[ID].V.size(); ++i) {
+      if (G[ID].V[i].fanOut==0) std::cout << G[ID].V[i].name << '\n';
+    }
+    std::cout << "cnt:"<< cnt << " of " << G[ID].V.size()<<'\n';
     //std::cout << "G (" << argv[1+ID] << ")\n";
     //for (int i=0; i<G[ID].V.size(); ++i) {
     //  auto n = G[ID].V[i];
@@ -165,7 +199,8 @@ int main(int argc, char **argv) {
     //for (int i=0; i<G[ID].E.size(); ++i) {
     //  std::cout << G[ID].E[i].from << " -> " << G[ID].E[i].to << '\n';
     //}
-    std::cout << distance(G[0],G[1]) << '\n';
+    std::cout << distance_V1(G[0],G[1]) << '\n';
+    std::cout << distance_V2(G[0],G[1]) << '\n';
   };
 
   int ID0=0, ID1=1;
